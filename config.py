@@ -1,4 +1,4 @@
-BOT_TOKEN = "your bot token"
+BOT_TOKEN = "8256563074:AAEKu2hDdhxn3eY-SWYDecGvSL-zZmbxJdo"
 ADMINS = [5371980041]
 SHEET_NAME = "Client list"
 SERVICE_ACCOUNT_FILE = "service_account.json"
