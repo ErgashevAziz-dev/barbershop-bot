@@ -1,16 +1,6 @@
 # database.py
 import sqlite3
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from config import SERVICE_ACCOUNT_FILE, SHEET_NAME
 
-# Google auth
-SCOPE = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive.file",
-    "https://www.googleapis.com/auth/drive"
-]
 
 def init_db():
     conn = sqlite3.connect("barber_clients.db")
@@ -40,22 +30,6 @@ def add_client_sql(name, phone, service, barber, date_str, time_str):
     """, (name, phone, service, barber, date_str, time_str))
     conn.commit()
     conn.close()
-
-def append_to_sheet(name, phone, service, barber, date_str, time_str):
-    creds = ServiceAccountCredentials.from_json_keyfile_name(SERVICE_ACCOUNT_FILE, SCOPE)
-    gc = gspread.authorize(creds)
-    try:
-        sheet = gc.open(SHEET_NAME).sheet1
-    except Exception as e:
-        raise e
-    # Append row: Date, Time, Barber, Service, Name, Phone
-    sheet.append_row([date_str, time_str, barber, service, name, phone])
-
-def add_client(name, phone, service, barber, date_str, time_str):
-    # save to sqlite
-    add_client_sql(name, phone, service, barber, date_str, time_str)
-    # append to google sheets
-    append_to_sheet(name, phone, service, barber, date_str, time_str)
 
 def get_bookings_for(barber, date_str):
     """Return list of time strings already booked for this barber on date_str from SQLite (fast)."""
