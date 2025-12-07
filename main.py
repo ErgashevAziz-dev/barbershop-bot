@@ -131,19 +131,16 @@ def ask_date(update: Update, context: CallbackContext):
     booked = get_bookings_for(barber, date_iso)
 
     slots = []
-    today = datetime.now(TZ).date()
-    now_time = datetime.now(TZ).time()
+    now_dt = datetime.now(TZ)
+
     cur_dt = TZ.localize(datetime.combine(datetime.fromisoformat(date_iso), WORK_START))
     end_dt = TZ.localize(datetime.combine(datetime.fromisoformat(date_iso), WORK_END))
 
-    while cur_dt.time() <= end_dt.time():
+    while cur_dt <= end_dt:
         slot_str = cur_dt.strftime("%H:%M")
-        if datetime.fromisoformat(date_iso).date() == today:
-            if cur_dt.time() > now_time and slot_str not in booked:
-                slots.append([slot_str])
-        else:
-            if slot_str not in booked:
-                slots.append([slot_str])
+        # Faqat kelajakdagi bo‘sh slotlar
+        if cur_dt > now_dt + timedelta(minutes=29) and slot_str not in booked:
+            slots.append([slot_str])
         cur_dt += timedelta(minutes=SLOT_MINUTES)
 
     if not slots:
@@ -156,7 +153,6 @@ def ask_date(update: Update, context: CallbackContext):
     markup = ReplyKeyboardMarkup(slots, one_time_keyboard=True, resize_keyboard=True)
     update.message.reply_text("Vaqtni tanlang:", reply_markup=markup)
     return ASK_TIME
-
 
 # ASK TIME
 def ask_time(update: Update, context: CallbackContext):
@@ -182,6 +178,7 @@ def ask_time(update: Update, context: CallbackContext):
         msg, reply_markup=ReplyKeyboardMarkup([['ha', "yo'q"]], one_time_keyboard=True, resize_keyboard=True)
     )
     return CONFIRM
+
 
 
 # done
@@ -238,7 +235,7 @@ def cancel(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 
-# REMINDERS
+# CHECK REMINDERS
 def check_reminders(context: CallbackContext):
     now = datetime.now(TZ)
     bookings = get_pending_reminders()
@@ -248,42 +245,45 @@ def check_reminders(context: CallbackContext):
             datetime.strptime(f"{b['date']} {b['time']}", "%Y-%m-%d %H:%M")
         )
 
-        if timedelta(minutes=29) < (booking_datetime - now) <= timedelta(minutes=31):
+        # Faqat kelajakdagi bookinglar uchun reminder
+        if booking_datetime > now:
+            # Booking 30 daqiqa ichida boshlanadigan bo‘lsa
+            if timedelta(minutes=29) < (booking_datetime - now) <= timedelta(minutes=31):
 
-            #1) CUSTOMER notify
-            context.bot.send_message(
-                chat_id=b["telegram_id"],
-                text=(
-                    f"📢 *Eslatma!* \n\n"
-                    f"Siz bugun soat *{b['time']}* da "
-                    f"bizning sartaroshxonamizga yozilgansiz.\n"
-                    f"⏳ Sizni kutib qolamiz!"
-                ),
-                parse_mode="Markdown"
-            )
+                # CUSTOMER notify
+                context.bot.send_message(
+                    chat_id=b["telegram_id"],
+                    text=(
+                        f"📢 *Eslatma!* \n\n"
+                        f"Siz bugun soat *{b['time']}* da "
+                        f"bizning sartaroshxonamizga yozilgansiz.\n"
+                        f"⏳ Sizni kutib qolamiz!"
+                    ),
+                    parse_mode="Markdown"
+                )
 
-            #2) ADMIN notify
-            admin_text = (
-                f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
-                f"👤 Ism: *{b['name']}*\n"
-                f"📞 Tel: *{b['phone']}*\n"
-                f"🛠 Xizmat: *{b['service']}*\n"
-                f"💈 Sartarosh: *{b['barber']}*\n"
-                f"📅 Sana: *{b['date']}*\n"
-                f"⏰ Vaqt: *{b['time']}*\n"
-            )
+                # ADMIN notify
+                admin_text = (
+                    f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
+                    f"👤 Ism: *{b['name']}*\n"
+                    f"📞 Tel: *{b['phone']}*\n"
+                    f"🛠 Xizmat: *{b['service']}*\n"
+                    f"💈 Sartarosh: *{b['barber']}*\n"
+                    f"📅 Sana: *{b['date']}*\n"
+                    f"⏰ Vaqt: *{b['time']}*\n"
+                )
 
-            for admin in ADMINS:
-                try:
-                    context.bot.send_message(
-                        chat_id=admin,
-                        text=admin_text,
-                        parse_mode="Markdown"
-                    )
-                except Exception:
-                    logger.exception("Admin reminder failed")
+                for admin in ADMINS:
+                    try:
+                        context.bot.send_message(
+                            chat_id=admin,
+                            text=admin_text,
+                            parse_mode="Markdown"
+                        )
+                    except Exception:
+                        logger.exception("Admin reminder failed")
 
-            mark_as_reminded(b["id"])
+                mark_as_reminded(b["id"])
 
 
 # OTHER COMMANDS
