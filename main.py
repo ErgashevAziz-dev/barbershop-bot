@@ -60,14 +60,20 @@ def ask_name(update: Update, context: CallbackContext):
 # ASK PHONE
 
 def ask_phone(update: Update, context: CallbackContext):
-    # Foydalanuvchi matn yozsa, uni telefon sifatida qabul qilamiz
-    phone = update.message.text.strip()
+    # Agar foydalanuvchi contact tugmasini bosgan bo'lsa
+    if update.message.contact:
+        phone = update.message.contact.phone_number
+    else:
+        # Foydalanuvchi matn yozgan bo'lsa
+        phone = update.message.text.strip()
+
     context.user_data['phone'] = phone
 
-    # Xizmatni tanlash tugmalari
+    # Keyingi bosqich: xizmat tanlash
     markup = ReplyKeyboardMarkup([[s] for s in SERVICES], one_time_keyboard=True, resize_keyboard=True)
     update.message.reply_text("Qaysi xizmatni xohlaysiz?", reply_markup=markup)
     return ASK_SERVICE
+
 
 
 def phone_from_contact(update: Update, context: CallbackContext):
@@ -298,10 +304,7 @@ def main():
         entry_points=[CommandHandler("book", book_start)],
         states={
             ASK_NAME: [MessageHandler(Filters.text & ~Filters.command, ask_name)],
-            ASK_PHONE: [
-                MessageHandler(Filters.contact, phone_from_contact),
-                MessageHandler(Filters.text & ~Filters.command, ask_service)
-            ],
+            ASK_PHONE: [MessageHandler(Filters.text | Filters.contact, ask_phone)],
             ASK_SERVICE: [MessageHandler(Filters.text & ~Filters.command, ask_service)],
             ASK_BARBER: [MessageHandler(Filters.text & ~Filters.command, ask_barber)],
             ASK_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
