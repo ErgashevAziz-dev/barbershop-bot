@@ -203,7 +203,7 @@ def finish(update: Update, context: CallbackContext):
 
         add_client(name, phone, service, barber, date_iso, time_str, telegram_id=user_id)
 
-        # Admin notify
+        # Admin notify (shu yerda admin o‘zi booking qilgan bo‘lsa ham xabar oladi)
         admin_msg = (
             f"📥 *Yangi Mijoz!*\n\n"
             f"👤 Ism: *{name}*\n"
@@ -238,31 +238,36 @@ def cancel(update: Update, context: CallbackContext):
 # CHECK REMINDERS
 def check_reminders(context: CallbackContext):
     now = datetime.now(TZ)
-    bookings = get_pending_reminders()
+    bookings = get_pending_reminders()  # faqat reminded=False bo‘lgan bookinglar
 
     for b in bookings:
         booking_datetime = TZ.localize(
             datetime.strptime(f"{b['date']} {b['time']}", "%Y-%m-%d %H:%M")
         )
 
-        # Faqat kelajakdagi bookinglar uchun reminder
+        # Faqat kelajakdagi bookinglar
         if booking_datetime > now:
-            # Booking 30 daqiqa ichida boshlanadigan bo‘lsa
-            if timedelta(minutes=29) < (booking_datetime - now) <= timedelta(minutes=31):
+
+            # 30 daqiqa oldin (faqat 1 marta)
+            time_diff = booking_datetime - now
+            if timedelta(minutes=29, seconds=30) <= time_diff <= timedelta(minutes=30, seconds=30):
 
                 # CUSTOMER notify
-                context.bot.send_message(
-                    chat_id=b["telegram_id"],
-                    text=(
-                        f"📢 *Eslatma!* \n\n"
-                        f"Siz bugun soat *{b['time']}* da "
-                        f"bizning sartaroshxonamizga yozilgansiz.\n"
-                        f"⏳ Sizni kutib qolamiz!"
-                    ),
-                    parse_mode="Markdown"
-                )
+                try:
+                    context.bot.send_message(
+                        chat_id=b["telegram_id"],
+                        text=(
+                            f"📢 *Eslatma!* \n\n"
+                            f"Siz bugun soat *{b['time']}* da "
+                            f"bizning sartaroshxonamizga yozilgansiz.\n"
+                            f"⏳ Sizni kutib qolamiz!"
+                        ),
+                        parse_mode="Markdown"
+                    )
+                except Exception:
+                    logger.exception("Customer reminder failed")
 
-                # ADMIN notify
+                # ADMIN notify (shu yerda admin o‘zi booking qilgan bo‘lsa ham xabar oladi)
                 admin_text = (
                     f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
                     f"👤 Ism: *{b['name']}*\n"
@@ -272,7 +277,6 @@ def check_reminders(context: CallbackContext):
                     f"📅 Sana: *{b['date']}*\n"
                     f"⏰ Vaqt: *{b['time']}*\n"
                 )
-
                 for admin in ADMINS:
                     try:
                         context.bot.send_message(
@@ -283,7 +287,9 @@ def check_reminders(context: CallbackContext):
                     except Exception:
                         logger.exception("Admin reminder failed")
 
+                # Reminder flag ni yangilaymiz
                 mark_as_reminded(b["id"])
+
 
 
 # OTHER COMMANDS
