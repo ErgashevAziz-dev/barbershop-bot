@@ -60,17 +60,15 @@ def ask_name(update: Update, context: CallbackContext):
 # ASK PHONE
 
 def ask_phone(update: Update, context: CallbackContext):
-    context.user_data['name'] = update.message.text.strip()
+    # Foydalanuvchi matn yozsa, uni telefon sifatida qabul qilamiz
+    phone = update.message.text.strip()
+    context.user_data['phone'] = phone
 
-    # contact button
-    contact_btn = KeyboardButton("📱 Raqamni yuborish", request_contact=True)
-    markup = ReplyKeyboardMarkup([[contact_btn]], resize_keyboard=True, one_time_keyboard=True)
+    # Xizmatni tanlash tugmalari
+    markup = ReplyKeyboardMarkup([[s] for s in SERVICES], one_time_keyboard=True, resize_keyboard=True)
+    update.message.reply_text("Qaysi xizmatni xohlaysiz?", reply_markup=markup)
+    return ASK_SERVICE
 
-    update.message.reply_text(
-        "Telefon raqamingizni yuboring yoki pastdagi tugmadan foydalaning:",
-        reply_markup=markup
-    )
-    return ASK_PHONE
 
 def phone_from_contact(update: Update, context: CallbackContext):
     contact = update.message.contact
