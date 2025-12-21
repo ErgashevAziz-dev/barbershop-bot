@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 ASK_NAME, ASK_PHONE, ASK_SERVICE, ASK_BARBER, ASK_DATE, ASK_TIME, CONFIRM = range(7)
 
 # Data
-BARBERS = ["Jamshed", "Zarshed"]
+BARBERS = ["Jamshed"]
 SERVICES = ["Klassik soch olish", "Fade", "Ukladka", "Soch + Soqol"]
 
 WORK_START = dtime(hour=9, minute=0)
@@ -31,7 +31,7 @@ TZ = pytz.timezone('Asia/Tashkent')
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
         "Assalomu alaykum! Sartaroshxonamizga xush kelibsiz.\n"
-        "Buyurtma berish uchun /book tugmasini bosing."
+        "joyingizni bron qilish uchun /book tugmasini bosing."
     )
 
 
@@ -82,7 +82,7 @@ def phone_from_contact(update: Update, context: CallbackContext):
     context.user_data['phone'] = phone
 
     markup = ReplyKeyboardMarkup([[s] for s in SERVICES], one_time_keyboard=True, resize_keyboard=True)
-    update.message.reply_text("Qaysi xizmatni xohlaysiz?", reply_markup=markup)
+    update.message.reply_text("Soch turmagingizni tanlang", reply_markup=markup)
     return ASK_SERVICE
 
 
@@ -90,7 +90,7 @@ def phone_from_contact(update: Update, context: CallbackContext):
 def ask_service(update: Update, context: CallbackContext):
     context.user_data['service'] = update.message.text.strip()
     markup = ReplyKeyboardMarkup([[b] for b in BARBERS], one_time_keyboard=True, resize_keyboard=True)
-    update.message.reply_text("Qaysi Sartaroshga yozilmoqchisiz?", reply_markup=markup)
+    update.message.reply_text("Barberni tanlang", reply_markup=markup)
     return ASK_BARBER
 
 
@@ -169,10 +169,10 @@ def ask_time(update: Update, context: CallbackContext):
         f"👤 Ism: {name}\n"
         f"📞 Tel: {phone}\n"
         f"🛠 Xizmat: {service}\n"
-        f"💈 Sartarosh: {barber}\n"
+        f"💈 Barber: {barber}\n"
         f"📅 Sana: {date_iso}\n"
         f"⏰ Vaqt: {time_str}\n\n"
-        "Tasdiqlaysizmi? (ha/yo'q)"
+        "Tasdiqlaysizmi? (yo'q/ha)"
     )
     update.message.reply_text(
         msg, reply_markup=ReplyKeyboardMarkup([['ha', "yo'q"]], one_time_keyboard=True, resize_keyboard=True)
@@ -327,7 +327,7 @@ def main():
     dp.add_handler(conv)
 
     updater.bot.set_my_commands([
-        BotCommand("start", "Botni ishga tushiradi"),
+        BotCommand("start", "Botni ishga tushirish"),
         BotCommand("book", "Bron qilish"),
         BotCommand("numbers", "Kontaktlar"),
         BotCommand("developer", "Developer profili")
