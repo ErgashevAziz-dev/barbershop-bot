@@ -250,7 +250,7 @@ def check_reminders(context: CallbackContext):
 
             # 30 daqiqa oldin (faqat 1 marta)
             time_diff = booking_datetime - now
-            if timedelta(minutes=29, seconds=30) <= time_diff <= timedelta(minutes=30, seconds=30):
+            if time_diff <= timedelta(minutes=30) and time_diff > timedelta(minutes=0):
 
                 # CUSTOMER notify
                 try:
