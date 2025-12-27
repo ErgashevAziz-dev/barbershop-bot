@@ -179,17 +179,25 @@ def check_reminders(context: CallbackContext):
 
 # -------------------- USER CANCEL COMMAND --------------------
 def my_bookings(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
+    from datetime import datetime
+    import pytz
+
+    TZ = pytz.timezone('Asia/Tashkent')
+    now = datetime.now(TZ).strftime("%Y-%m-%d %H:%M")
+
     cursor = context.bot_data.get('db_cursor')
-    cursor.execute("SELECT id, date, time, barber, status FROM bookings WHERE telegram_id=? AND status='active'", (user_id,))
-    rows = cursor.fetchall()
+    user_id = update.message.from_user.id
+
+    rows = get_future_bookings(cursor, user_id, now)
+
     if not rows:
         update.message.reply_text("Sizda faol bron yo‘q.")
         return
+
     text = "Sizning bronlaringiz:\n"
     for r in rows:
         text += f"\nID: {r[0]} | Sana: {r[1]} | Vaqt: {r[2]} | Barber: {r[3]}"
-    text += "\n\nO'chirish uchun: /cancelbooking <ID>"
+     text += "\n\nO'chirish uchun: /cancelbooking <ID>"
     update.message.reply_text(text)
 
 def cancel_my_booking(update: Update, context: CallbackContext):
