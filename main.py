@@ -134,12 +134,12 @@ def ask_time(update: Update, context: CallbackContext):
     d = context.user_data
     update.message.reply_text(
         f"Joyingiz band qilindi:\n\n"
-        f"👤 Ism: {name}\n"
-        f"📞 Tel: {phone}\n"
-        f"🛠 Xizmat: {service}\n"
-        f"💈 Barber: {barber}\n"
-        f"📅 Sana: {date_iso}\n"
-        f"⏰ Vaqt: {time_str}\n\n"
+        f"👤 Ism:  {d['name']}\n"
+        f"📞 Tel: {d['phone']}\n"
+        f"🛠 Xizmat: {d['service']}\n"
+        f"💈 Barber: {d['barber']}\n"
+        f"📅 Sana: {d['date']}\n"
+        f"⏰ Vaqt: {d['time']}\n\n"
         "Tasdiqlaysizmi? (yo'q/ha)",
         reply_markup=ReplyKeyboardMarkup([["yo'q", "ha"]], resize_keyboard=True)
     )
