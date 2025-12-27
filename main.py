@@ -263,19 +263,19 @@ def main():
     dp = updater.dispatcher
 
     conv = ConversationHandler(
-        entry_points=[CommandHandler("book", book_start)],
-        states={
-            ASK_NAME: [MessageHandler(Filters.text & ~Filters.command, ask_name)],
-            ASK_PHONE: [MessageHandler(Filters.text | Filters.contact, ask_phone)],
-            ASK_SERVICE: [MessageHandler(Filters.text & ~Filters.command, ask_service)],
-            ASK_BARBER: [MessageHandler(Filters.text & ~Filters.command, ask_barber)],
-            ASK_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
-            ASK_TIME: [MessageHandler(Filters.text & ~Filters.command, ask_time)],
-            CONFIRM: [MessageHandler(Filters.text & ~Filters.command, finish)]
-        },
-        fallbacks=[CommandHandler("cancel", cancel)],
-        allow_reentry=True
-    )
+    entry_points=[CommandHandler("book", book_start)],
+    states={
+        ASK_NAME: [MessageHandler(Filters.text & ~Filters.command, ask_name)],
+        ASK_PHONE: [MessageHandler(Filters.text | Filters.contact, ask_phone)],
+        ASK_SERVICE: [MessageHandler(Filters.text & ~Filters.command, ask_service)],
+        ASK_BARBER: [MessageHandler(Filters.text & ~Filters.command, ask_barber)],
+        ASK_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
+        ASK_TIME: [MessageHandler(Filters.text & ~Filters.command, ask_time)],
+        CONFIRM: [MessageHandler(Filters.text & ~Filters.command, finish)]
+    },
+    fallbacks=[CommandHandler("cancel", conv_cancel)],
+    allow_reentry=True
+)
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("numbers", numbers))
