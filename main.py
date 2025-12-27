@@ -172,8 +172,26 @@ def my_bookings(update: Update, context: CallbackContext):
 
 # -------------------- CANCEL --------------------
 def cancel_start(update: Update, context: CallbackContext):
-    update.message.reply_text("Bekor qilmoqchi bo‘lgan ID ni yuboring:")
+    now = datetime.now(TZ)
+    rows = get_future_user_bookings(update.message.from_user.id)
+
+    future = []
+    for r in rows:
+        dt = TZ.localize(datetime.strptime(f"{r[3]} {r[4]}", "%Y-%m-%d %H:%M"))
+        if dt > now:
+            future.append(r)
+
+    if not future:
+        update.message.reply_text("❌ Sizda bekor qilinadigan bron yo‘q.")
+        return ConversationHandler.END
+
+    text = "Bekor qilmoqchi bo‘lgan bron ID sini yuboring:\n\n"
+    for r in future:
+        text += f"🆔 {r[0]} | {r[1]} | {r[3]} {r[4]}\n"
+
+    update.message.reply_text(text)
     return 0
+
 
 
 def cancel_confirm(update: Update, context: CallbackContext):
