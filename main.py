@@ -37,9 +37,8 @@ CANCEL_ID = range(1)
 # -------------------- START --------------------
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
-        "Assalomu alaykum!\n"
-        "Bron qilish uchun /book\n"
-        "Bronlaringizni ko‘rish uchun /mybookings"
+        "Assalomu alaykum! Xush kelibsiz!\n"
+        "Bron qilish uchun /book ni bosing.\n"
     )
 
 # -------------------- BOOK FLOW --------------------
@@ -59,7 +58,15 @@ def ask_name(update: Update, context: CallbackContext):
 
 
 def ask_phone(update: Update, context: CallbackContext):
-    phone = update.message.contact.phone_number if update.message.contact else update.message.text
+    phone = update.message.contact.phone_number if update.message.contact else update.message.text.strip()
+    
+    pattern = re.compile(r'^\+998\d{9}$')
+    if not pattern.match(phone):
+        update.message.reply_text(
+            "❌ Telefon raqam noto‘g‘ri. Iltimos +998XXXXXXXXX formatida kiriting yoki pastdagi tugmadan yuboring."
+        )
+        return ASK_PHONE
+    
     context.user_data["phone"] = phone
     update.message.reply_text(
         "Xizmatni tanlang:",
