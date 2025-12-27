@@ -16,10 +16,11 @@ def init_db():
         time TEXT,
         telegram_id INTEGER,
         reminded INTEGER DEFAULT 0,
-        status TEXT DEFAULT 'active'
+        status TEXT DEFAULT 'active'  -- bu yerda status qo'shildi
     )
     ''')
     conn.commit()
+
 
 def add_client(name, phone, service, barber, date, time, telegram_id=None):
     cursor.execute('''
