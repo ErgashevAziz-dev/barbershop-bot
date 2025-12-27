@@ -132,11 +132,7 @@ def ask_date(update: Update, context: CallbackContext):
 def ask_time(update: Update, context: CallbackContext):
     context.user_data["time"] = update.message.text
     d = context.user_data
-    update.message.reply_text(
-        f"👤 {d['name']}\n🛠 {d['service']}\n💈 {d['barber']}\n"
-        f"📅 {d['date']} ⏰ {d['time']}\n\nTasdiqlaysizmi?",
-        reply_markup=ReplyKeyboardMarkup([["ha", "yo‘q"]], resize_keyboard=True)
-    )
+    update.message.reply_text(f"Joyingiz band qilindi:\n\n" f"👤 Ism: {data['name']}\n" f"📞 Tel: {data['phone']}\n" f"🛠 Xizmat: {data['service']}\n" f"💈 Barber: {data['barber']}\n" f"📅 Sana: {data['date']}\n" f"⏰ Vaqt: {data['time']}\n\n" "Tasdiqlaysizmi? (yo'q/ha)")
     return CONFIRM
 
 
@@ -239,6 +235,12 @@ def check_reminders(context: CallbackContext):
                     context.bot.send_message(chat_id=admin, text=admin_text, parse_mode="Markdown")
                 except Exception:
                     logger.exception(f"Admin reminder failed for {admin}")
+
+def numbers(update: Update, context: CallbackContext):
+    update.message.reply_text("Admin bilan bog‘lanish: https://t.me/Death0201") 
+    
+def developer(update: Update, context: CallbackContext):
+    update.message.reply_text("Bot developer: https://t.me/ergashev_dev")
 # -------------------- MAIN --------------------
 def main():
     init_db()
