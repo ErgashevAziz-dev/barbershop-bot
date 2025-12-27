@@ -76,7 +76,15 @@ def ask_phone(update: Update, context: CallbackContext):
 
 
 def ask_service(update: Update, context: CallbackContext):
-    context.user_data["service"] = update.message.text
+    service = update.message.text.strip()
+    
+    if service not in SERVICES:
+        update.message.reply_text(
+            "❌ Iltimos, pastdagi tugmalardan birini tanlang."
+        )
+        return ASK_SERVICE
+    
+    context.user_data["service"] = service
     update.message.reply_text(
         "Barberni tanlang:",
         reply_markup=ReplyKeyboardMarkup([[b] for b in BARBERS], resize_keyboard=True)
@@ -85,7 +93,15 @@ def ask_service(update: Update, context: CallbackContext):
 
 
 def ask_barber(update: Update, context: CallbackContext):
-    context.user_data["barber"] = update.message.text
+    barber = update.message.text.strip()
+    
+    if barber not in BARBERS:
+        update.message.reply_text(
+            "❌ Iltimos, pastdagi tugmalardan birini tanlang."
+        )
+        return ASK_BARBER
+    
+    context.user_data["barber"] = barber
 
     today = datetime.now(TZ).date()
     buttons, date_map = [], {}
@@ -137,7 +153,28 @@ def ask_date(update: Update, context: CallbackContext):
 
 
 def ask_time(update: Update, context: CallbackContext):
-    context.user_data["time"] = update.message.text
+    time_selected = update.message.text.strip()
+    date_iso = context.user_data["date"]
+    barber = context.user_data["barber"]
+    booked = get_booked_times(barber, date_iso)
+
+    # Bo‘sh slotlarni hisoblash
+    now = datetime.now(TZ)
+    cur = TZ.localize(datetime.combine(datetime.fromisoformat(date_iso), WORK_START))
+    end = TZ.localize(datetime.combine(datetime.fromisoformat(date_iso), WORK_END))
+
+    slots = []
+    while cur <= end:
+        t = cur.strftime("%H:%M")
+        if cur > now + timedelta(minutes=30) and t not in booked:
+            slots.append(t)
+        cur += timedelta(minutes=SLOT_MINUTES)
+
+    if time_selected not in slots:
+        update.message.reply_text("❌ Iltimos, pastdagi tugmalardan birini tanlang.")
+        return ASK_TIME
+
+    context.user_data["time"] = time_selected
     d = context.user_data
     update.message.reply_text(
         f"Joyingiz band qilindi:\n\n"
@@ -151,6 +188,7 @@ def ask_time(update: Update, context: CallbackContext):
         reply_markup=ReplyKeyboardMarkup([["yo'q", "ha"]], resize_keyboard=True)
     )
     return CONFIRM
+
 
 
 def finish(update: Update, context: CallbackContext):
