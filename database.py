@@ -36,9 +36,17 @@ def add_client(name, phone, service, barber, date, time, telegram_id=None):
 
 
 def get_bookings_for(barber, date):
-    cursor.execute("SELECT time FROM bookings WHERE barber=? AND date=? AND status='active'", (barber, date))
-    return [r[0] for r in cursor.fetchall()]
+    from datetime import datetime
+    import pytz
 
+    TZ = pytz.timezone('Asia/Tashkent')
+    today = datetime.now(TZ).date()
+
+    cursor.execute(
+        "SELECT time FROM bookings WHERE barber=? AND date>=? AND status='active'",
+        (barber, today.isoformat())
+    )
+    return [r[0] for r in cursor.fetchall()]
 
 def get_pending_reminders():
     cursor.execute("""
