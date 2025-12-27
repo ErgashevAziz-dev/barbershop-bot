@@ -152,14 +152,32 @@ def finish(update: Update, context: CallbackContext):
         return ConversationHandler.END
 
     d = context.user_data
+    user_id = update.message.from_user.id
+
     add_booking(
         d["name"], d["phone"], d["service"],
         d["barber"], d["date"], d["time"],
-        update.message.from_user.id
+        user_id
     )
+
+    # Adminga xabar
+    admin_msg = (f"📥 *Yangi Mijoz!*\n\n"
+                 f"👤 Ism: *{d['name']}*\n"
+                 f"📞 Tel: *{d['phone']}*\n"
+                 f"🛠 Xizmat: *{d['service']}*\n"
+                 f"💈 Barber: *{d['barber']}*\n"
+                 f"📅 Sana: *{d['date']}*\n"
+                 f"⏰ Vaqt: *{d['time']}*")
+
+    for admin in ADMINS:
+        try:
+            context.bot.send_message(chat_id=admin, text=admin_msg, parse_mode="Markdown")
+        except Exception:
+            logger.exception(f"Admin notify failed for {admin}")
 
     update.message.reply_text("✅ Joyingiz bron qilindi", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
+
 
 
 # -------------------- MY BOOKINGS --------------------
