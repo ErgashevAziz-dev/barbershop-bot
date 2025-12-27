@@ -193,23 +193,33 @@ def my_bookings(update: Update, context: CallbackContext):
     update.message.reply_text(text)
 
 def cancel_my_booking(update: Update, context: CallbackContext):
-    args = context.args
-    if not args:
-        update.message.reply_text("Iltimos, /cancelbooking <ID> tarzida yozing.")
+    if len(context.args) != 1:
+        update.message.reply_text("Iltimos, /cancelbooking <ID> formatida yozing.")
         return
-    booking_id = int(args[0])
-    cursor = context.bot_data.get('db_cursor')
-    cursor.execute("SELECT date, time FROM bookings WHERE id=? AND status='active'", (booking_id,))
+
+    booking_id = context.args[0]
+
+    # Bronni bazadan tekshiramiz
+    cursor.execute("SELECT date, time FROM bookings WHERE id=? AND telegram_id=?", (booking_id, update.message.from_user.id))
     row = cursor.fetchone()
     if not row:
-        update.message.reply_text("Bunday aktiv bron topilmadi.")
+        update.message.reply_text("Bunday ID li bron topilmadi.")
         return
-    booking_dt = TZ.localize(datetime.strptime(f"{row[0]} {row[1]}", "%Y-%m-%d %H:%M"))
-    if (booking_dt - datetime.now(TZ)).total_seconds() < 3600:
-        update.message.reply_text("1 soatdan kam vaqt qolganda o'chirish mumkin emas!")
+
+    from datetime import datetime, timedelta
+    import pytz
+    TZ = pytz.timezone('Asia/Tashkent')
+    booking_datetime = TZ.localize(datetime.strptime(f"{row[0]} {row[1]}", "%Y-%m-%d %H:%M"))
+    now = datetime.now(TZ)
+
+    if booking_datetime - now < timedelta(hours=1):
+        update.message.reply_text("Kechirasiz, 1 soatdan kam vaqt qolgani uchun bronni o‘chirib bo‘lmaydi.")
         return
-    cancel_booking(booking_id)
-    update.message.reply_text("Bron muvaffaqiyatli bekor qilindi.")
+
+    # O'chiramiz
+    cursor.execute("DELETE FROM bookings WHERE id=?", (booking_id,))
+    conn.commit()
+    update.message.reply_text(f"Bron {booking_id} muvaffaqiyatli o‘chirildi ✅")
 
 # -------------------- OTHER --------------------
 def numbers(update: Update, context: CallbackContext):
