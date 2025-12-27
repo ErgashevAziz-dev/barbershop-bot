@@ -133,9 +133,15 @@ def ask_time(update: Update, context: CallbackContext):
     context.user_data["time"] = update.message.text
     d = context.user_data
     update.message.reply_text(
-        f"👤 {d['name']}\n🛠 {d['service']}\n💈 {d['barber']}\n"
-        f"📅 {d['date']} ⏰ {d['time']}\n\nTasdiqlaysizmi?",
-        reply_markup=ReplyKeyboardMarkup([["ha", "yo‘q"]], resize_keyboard=True)
+        f"Joyingiz band qilindi:\n\n"
+        f"👤 Ism: {name}\n"
+        f"📞 Tel: {phone}\n"
+        f"🛠 Xizmat: {service}\n"
+        f"💈 Barber: {barber}\n"
+        f"📅 Sana: {date_iso}\n"
+        f"⏰ Vaqt: {time_str}\n\n"
+        "Tasdiqlaysizmi? (yo'q/ha)",
+        reply_markup=ReplyKeyboardMarkup([["yo'q", "ha"]], resize_keyboard=True)
     )
     return CONFIRM
 
@@ -152,7 +158,7 @@ def finish(update: Update, context: CallbackContext):
         update.message.from_user.id
     )
 
-    update.message.reply_text("✅ Bron muvaffaqiyatli!", reply_markup=ReplyKeyboardRemove())
+    update.message.reply_text("✅ Joyingiz bron qilindi", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
 
@@ -165,9 +171,9 @@ def my_bookings(update: Update, context: CallbackContext):
     for r in rows:
         dt = TZ.localize(datetime.strptime(f"{r[3]} {r[4]}", "%Y-%m-%d %H:%M"))
         if dt > now:
-            text += f"🆔 {r[0]} | {r[1]} | {r[3]} {r[4]}\n"
+            text += f"🆔 {r[0]} \n {r[1]} \n {r[3]} \n {r[4]}\n"
 
-    update.message.reply_text(text or "Kelajakdagi bronlar yo‘q.")
+    update.message.reply_text(text or "sizda bronlar yo‘q.")
 
 
 # -------------------- CANCEL --------------------
@@ -275,6 +281,8 @@ def main():
     dp.add_handler(CommandHandler("mybookings", my_bookings))
     dp.add_handler(book_conv)
     dp.add_handler(cancel_conv)
+    dp.add_handler(CommandHandler("numbers", numbers))
+    dp.add_handler(CommandHandler("developer", developer))
 
     updater.job_queue.run_repeating(check_reminders, 60, first=10)
     updater.start_polling()
