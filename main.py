@@ -2,7 +2,7 @@ import logging
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, BotCommand
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
 from datetime import datetime, timedelta, time as dtime
-from database import init_db, add_client, get_bookings_for, get_pending_reminders, mark_as_reminded, cancel_booking, conn
+from database import init_db, add_client, get_pending_reminders, mark_as_reminded, cancel_booking, conn
 from config import BOT_TOKEN, ADMINS
 import pytz
 
