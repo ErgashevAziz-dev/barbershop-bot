@@ -32,9 +32,27 @@ def get_bookings_for(barber, date):
     return [r[0] for r in cursor.fetchall()]
 
 def get_pending_reminders():
-    cursor.execute("SELECT id, name, time, date, telegram_id FROM bookings WHERE reminded=0")
+    cursor.execute("""
+        SELECT id, name, phone, service, barber, date, time, telegram_id
+        FROM bookings
+        WHERE reminded = 0
+    """)
     rows = cursor.fetchall()
-    return [{"id": r[0], "name": r[1], "time": r[2], "date": r[3], "telegram_id": r[4]} for r in rows]
+
+    return [
+        {
+            "id": r[0],
+            "name": r[1],
+            "phone": r[2],
+            "service": r[3],
+            "barber": r[4],
+            "date": r[5],
+            "time": r[6],
+            "telegram_id": r[7],
+        }
+        for r in rows
+    ]
+
 
 def mark_as_reminded(booking_id):
     cursor.execute("UPDATE bookings SET reminded=1 WHERE id=?", (booking_id,))
