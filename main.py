@@ -264,7 +264,7 @@ def main():
     # 4. ❗ ODDIY COMMAND HANDLERLAR (MUHIM QISM)
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("mybookings", my_bookings))
-    dp.add_handler(CommandHandler("cancelbooking", cancel_my_booking))
+    dp.add_handler(CommandHandler("cancelbooking", cancelbooking_start))
     dp.add_handler(CommandHandler("numbers", numbers))
     dp.add_handler(CommandHandler("developer", developer))
 
