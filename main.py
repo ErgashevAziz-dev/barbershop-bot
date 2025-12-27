@@ -188,7 +188,7 @@ def my_bookings(update: Update, context: CallbackContext):
     cursor = context.bot_data.get('db_cursor')
     user_id = update.message.from_user.id
 
-    rows = get_future_bookings(cursor, user_id, now)
+    rows = get_bookings_for(cursor, user_id, now)
 
     if not rows:
         update.message.reply_text("Sizda faol bron yo‘q.")
