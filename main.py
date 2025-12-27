@@ -247,28 +247,27 @@ def check_reminders(context: CallbackContext):
 
         time_diff = booking_datetime - now
 
-        # FAqat 30 minut oralig‘ida va kelajakda bo‘lsa
-        if timedelta(minutes=29) <= time_diff <= timedelta(minutes=30):
+        # 30 minut ichida bo‘lsa (1 marta)
+        if 0 < time_diff.total_seconds() <= 1800:
 
-            # ❗ AVVAL BELGILAB QO‘YAMIZ
+            # AVVAL belgilaymiz (takror yubormaslik uchun)
             mark_as_reminded(b["id"])
 
-            # CUSTOMER notify
+            # CUSTOMER
             try:
                 context.bot.send_message(
                     chat_id=b["telegram_id"],
                     text=(
                         f"📢 *Eslatma!*\n\n"
                         f"Siz bugun soat *{b['time']}* da "
-                        f"sartaroshxonamizga yozilgansiz.\n"
-                        f"⏳ Sizni kutib qolamiz!"
+                        f"sartaroshxonamizga yozilgansiz."
                     ),
                     parse_mode="Markdown"
                 )
             except Exception:
                 logger.exception("Customer reminder failed")
 
-            # ADMIN notify
+            # ADMIN
             admin_text = (
                 f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
                 f"👤 Ism: *{b['name']}*\n"
@@ -287,7 +286,8 @@ def check_reminders(context: CallbackContext):
                         parse_mode="Markdown"
                     )
                 except Exception:
-                    logger.exception("Admin reminder failed")
+                    logger.exception(f"Admin reminder failed for {admin}")
+
 
 
 
