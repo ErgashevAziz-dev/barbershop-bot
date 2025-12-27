@@ -245,6 +245,10 @@ def cancel_booking(update: Update, context: CallbackContext):
     cancel_user_booking(booking_id)
     update.message.reply_text("❌ Bron bekor qilindi. Vaqt boshqalarga ochildi.")
 
+def conv_cancel(update: Update, context: CallbackContext):
+    update.message.reply_text("Bekor qilindi.", reply_markup=ReplyKeyboardRemove())
+    return ConversationHandler.END
+
 # ==================
 # OTHER COMMANDS
 # ==================
