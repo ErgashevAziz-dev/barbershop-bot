@@ -163,7 +163,7 @@ def finish(update: Update, context: CallbackContext):
     # Adminga xabar
     admin_msg = (f"📥 *Yangi Mijoz!*\n\n"
                  f"👤 Ism: *{d['name']}*\n"
-                 f"📞 Tel: *{d[+'phone']}*\n"
+                 f"📞 Tel: *{d['phone']}*\n"
                  f"🛠 Xizmat: *{d['service']}*\n"
                  f"💈 Barber: *{d['barber']}*\n"
                  f"📅 Sana: *{d['date']}*\n"
