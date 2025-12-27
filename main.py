@@ -175,7 +175,7 @@ def ask_time(update: Update, context: CallbackContext):
         "Tasdiqlaysizmi? (yo'q/ha)"
     )
     update.message.reply_text(
-        msg, reply_markup=ReplyKeyboardMarkup([['ha', "yo'q"]], one_time_keyboard=True, resize_keyboard=True)
+        msg, reply_markup=ReplyKeyboardMarkup([["yo'q", "ha"]], one_time_keyboard=True, resize_keyboard=True)
     )
     return CONFIRM
 
