@@ -163,7 +163,7 @@ def finish(update: Update, context: CallbackContext):
     # Adminga xabar
     admin_msg = (f"📥 *Yangi Mijoz!*\n\n"
                  f"👤 Ism: *{d['name']}*\n"
-                 f"📞 Tel: *{d['phone']}*\n"
+                 f"📞 Tel: *{d[+'phone']}*\n"
                  f"🛠 Xizmat: *{d['service']}*\n"
                  f"💈 Barber: *{d['barber']}*\n"
                  f"📅 Sana: *{d['date']}*\n"
@@ -253,7 +253,7 @@ def check_reminders(context: CallbackContext):
             # Adminga
             admin_text = (f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
                           f"👤 Ism: *{b['name']}*\n"
-                          f"📞 Tel: *{b['phone']}*\n"
+                          f"📞 Tel: *{b[+'phone']}*\n"
                           f"🛠 Xizmat: *{b['service']}*\n"
                           f"💈 Sartarosh: *{b['barber']}*\n"
                           f"📅 Sana: *{b['date']}*\n"
