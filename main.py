@@ -179,8 +179,6 @@ def check_reminders(context: CallbackContext):
 
 # -------------------- USER CANCEL COMMAND --------------------
 def my_bookings(update: Update, context: CallbackContext):
-   from datetime import datetime
-    import pytz
     TZ = pytz.timezone('Asia/Tashkent')
     now = datetime.now(TZ)
 
