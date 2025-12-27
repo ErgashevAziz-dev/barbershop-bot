@@ -171,7 +171,7 @@ def my_bookings(update: Update, context: CallbackContext):
     for r in rows:
         dt = TZ.localize(datetime.strptime(f"{r[3]} {r[4]}", "%Y-%m-%d %H:%M"))
         if dt > now:
-            text += f"🆔 {r[0]} \n {r[1]} \n {r[3]} \n {r[4]}\n"
+            text += f"🆔 {r[0]} | {r[1]} | {r[3]} | {r[4]}\n"
 
     update.message.reply_text(text or "sizda bronlar yo‘q.")
 
