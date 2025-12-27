@@ -2,10 +2,7 @@ import logging
 from telegram import Update, ReplyKeyboardMarkup, ReplyKeyboardRemove, KeyboardButton, BotCommand
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
 from datetime import datetime, timedelta, time as dtime
-from database import (
-    init_db, add_client, get_bookings_for, get_pending_reminders, mark_as_reminded,
-    get_user_bookings, get_booking_for_cancel, cancel_user_booking
-)
+from database import init_db, add_client, get_bookings_for, get_pending_reminders, mark_as_reminded, cancel_booking
 from config import BOT_TOKEN, ADMINS
 import pytz
 
@@ -26,22 +23,16 @@ WORK_START = dtime(hour=9, minute=0)
 WORK_END = dtime(hour=21, minute=0)
 SLOT_MINUTES = 30
 
-# Timezone
 TZ = pytz.timezone('Asia/Tashkent')
 
-
-# ==================
-# START
-# ==================
+# -------------------- START --------------------
 def start(update: Update, context: CallbackContext):
     update.message.reply_text(
         "Assalomu alaykum! Sartaroshxonamizga xush kelibsiz.\n"
-        "Joyingizni bron qilish uchun /book tugmasini bosing."
+        "joyingizni bron qilish uchun /book tugmasini bosing."
     )
 
-# ==================
-# BOOKING FLOW
-# ==================
+# -------------------- BOOK --------------------
 def book_start(update: Update, context: CallbackContext):
     update.message.reply_text("Ismingizni yozing:", reply_markup=ReplyKeyboardRemove())
     return ASK_NAME
@@ -50,10 +41,7 @@ def ask_name(update: Update, context: CallbackContext):
     context.user_data['name'] = update.message.text.strip()
     contact_btn = KeyboardButton("📱 Raqamni yuborish", request_contact=True)
     markup = ReplyKeyboardMarkup([[contact_btn]], resize_keyboard=True, one_time_keyboard=True)
-    update.message.reply_text(
-        "Telefon raqamingizni yuboring (+998) yoki pastdagi tugmadan foydalaning:",
-        reply_markup=markup
-    )
+    update.message.reply_text("Telefon raqamingizni yuboring (+998) yoki pastdagi tugmadan foydalaning:", reply_markup=markup)
     return ASK_PHONE
 
 def ask_phone(update: Update, context: CallbackContext):
@@ -76,8 +64,7 @@ def ask_barber(update: Update, context: CallbackContext):
     context.user_data['barber'] = update.message.text.strip()
     today = datetime.now(TZ).date()
     now_time = datetime.now(TZ).time()
-    buttons = []
-    date_map = {}
+    buttons, date_map = [], {}
     for i in range(7):
         day = today + timedelta(days=i)
         if i == 0 and now_time >= WORK_END:
@@ -97,204 +84,176 @@ def ask_date(update: Update, context: CallbackContext):
     if not date_iso:
         update.message.reply_text("Iltimos, tugmalardan birini tanlang.")
         return ASK_DATE
-
     context.user_data['date'] = date_iso
     barber = context.user_data['barber']
     booked = get_bookings_for(barber, date_iso)
-
-    slots = []
-    now_dt = datetime.now(TZ)
+    slots, now_dt = [], datetime.now(TZ)
     cur_dt = TZ.localize(datetime.combine(datetime.fromisoformat(date_iso), WORK_START))
     end_dt = TZ.localize(datetime.combine(datetime.fromisoformat(date_iso), WORK_END))
-
     while cur_dt <= end_dt:
         slot_str = cur_dt.strftime("%H:%M")
         if cur_dt > now_dt + timedelta(minutes=29) and slot_str not in booked:
             slots.append([slot_str])
         cur_dt += timedelta(minutes=SLOT_MINUTES)
-
     if not slots:
-        update.message.reply_text("Kechirasiz, tanlangan kunda bo‘sh vaqtlar yo‘q.", reply_markup=ReplyKeyboardRemove())
+        update.message.reply_text("Kechirasiz, tanlangan kunda bo‘sh vaqtlar yo‘q. Boshqa kunni tanlab ko‘ring.", reply_markup=ReplyKeyboardRemove())
         return ASK_DATE
-
     markup = ReplyKeyboardMarkup(slots, one_time_keyboard=True, resize_keyboard=True)
     update.message.reply_text("Vaqtni tanlang:", reply_markup=markup)
     return ASK_TIME
 
 def ask_time(update: Update, context: CallbackContext):
     context.user_data['time'] = update.message.text.strip()
-    udata = context.user_data
-    msg = (
-        f"Joyingiz band qilindi:\n\n"
-        f"👤 Ism: {udata['name']}\n"
-        f"📞 Tel: {udata['phone']}\n"
-        f"🛠 Xizmat: {udata['service']}\n"
-        f"💈 Barber: {udata['barber']}\n"
-        f"📅 Sana: {udata['date']}\n"
-        f"⏰ Vaqt: {udata['time']}\n\n"
-        "Tasdiqlaysizmi? (yo'q/ha)"
-    )
-    update.message.reply_text(
-        msg, reply_markup=ReplyKeyboardMarkup([["yo'q", "ha"]], one_time_keyboard=True, resize_keyboard=True)
-    )
+    data = context.user_data
+    msg = (f"Joyingiz band qilindi:\n\n"
+           f"👤 Ism: {data['name']}\n"
+           f"📞 Tel: {data['phone']}\n"
+           f"🛠 Xizmat: {data['service']}\n"
+           f"💈 Barber: {data['barber']}\n"
+           f"📅 Sana: {data['date']}\n"
+           f"⏰ Vaqt: {data['time']}\n\n"
+           "Tasdiqlaysizmi? (yo'q/ha)")
+    update.message.reply_text(msg, reply_markup=ReplyKeyboardMarkup([["yo'q", "ha"]], one_time_keyboard=True, resize_keyboard=True))
     return CONFIRM
 
 def finish(update: Update, context: CallbackContext):
     text = update.message.text.strip().lower()
-    if text != "ha":
+    data = context.user_data
+    user_id = update.message.from_user.id
+    if text == 'ha':
+        booked = get_bookings_for(data['barber'], data['date'])
+        if data['time'] in booked:
+            update.message.reply_text("Afsuski, bu vaqt band. Iltimos boshqa vaqtni tanlang /start.", reply_markup=ReplyKeyboardRemove())
+            return ASK_DATE
+        add_client(data['name'], data['phone'], data['service'], data['barber'], data['date'], data['time'], user_id)
+        # Admin notify
+        admin_msg = (f"📥 *Yangi Mijoz!*\n\n"
+                     f"👤 Ism: *{data['name']}*\n"
+                     f"📞 Tel: *{data['phone']}*\n"
+                     f"🛠 Xizmat: *{data['service']}*\n"
+                     f"💈 Sartarosh: *{data['barber']}*\n"
+                     f"📅 Sana: *{data['date']}*\n"
+                     f"⏰ Vaqt: *{data['time']}*")
+        for admin in ADMINS:
+            try:
+                context.bot.send_message(chat_id=admin, text=admin_msg, parse_mode="Markdown")
+            except Exception:
+                logger.exception("Admin notify failed")
+        update.message.reply_text("Rahmat! Sizning joyingiz band qilindi. Vaqtingizni eslab qo‘ying 😊", reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
+    else:
         update.message.reply_text("Buyurtma bekor qilindi.", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
 
-    udata = context.user_data
-    booked = get_bookings_for(udata['barber'], udata['date'])
-    if udata['time'] in booked:
-        update.message.reply_text("Afsuski, bu vaqt band. /start bilan boshqa vaqt tanlang.", reply_markup=ReplyKeyboardRemove())
-        return ASK_DATE
-
-    user_id = update.message.from_user.id
-    add_client(udata['name'], udata['phone'], udata['service'], udata['barber'], udata['date'], udata['time'], telegram_id=user_id)
-
-    # Admin notify
-    admin_msg = (
-        f"📥 *Yangi Mijoz!*\n\n"
-        f"👤 Ism: *{udata['name']}*\n"
-        f"📞 Tel: *{udata['phone']}*\n"
-        f"🛠 Xizmat: *{udata['service']}*\n"
-        f"💈 Sartarosh: *{udata['barber']}*\n"
-        f"📅 Sana: *{udata['date']}*\n"
-        f"⏰ Vaqt: *{udata['time']}*"
-    )
-    for admin in ADMINS:
-        try:
-            context.bot.send_message(chat_id=admin, text=admin_msg, parse_mode="Markdown")
-        except Exception:
-            logger.exception("Admin notify failed")
-
-    update.message.reply_text("Rahmat! Sizning joyingiz band qilindi. 😊", reply_markup=ReplyKeyboardRemove())
+def cancel(update: Update, context: CallbackContext):
+    update.message.reply_text("Bekor qilindi.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
-# ==================
-# REMINDERS
-# ==================
+# -------------------- REMINDERS --------------------
 def check_reminders(context: CallbackContext):
     now = datetime.now(TZ)
     bookings = get_pending_reminders()
     for b in bookings:
-        booking_datetime = TZ.localize(datetime.strptime(f"{b['date']} {b['time']}", "%Y-%m-%d %H:%M"))
-        time_diff = booking_datetime - now
-
-        if 0 < time_diff.total_seconds() <= 1800:
-            mark_as_reminded(b["id"])  # 1 marta yuborish
-
-            # Customer
+        booking_dt = TZ.localize(datetime.strptime(f"{b['date']} {b['time']}", "%Y-%m-%d %H:%M"))
+        diff = booking_dt - now
+        if 0 < diff.total_seconds() <= 1800:  # 30 min ichida
+            mark_as_reminded(b["id"])
+            # Mijozga
             try:
-                context.bot.send_message(
-                    chat_id=b["telegram_id"],
-                    text=f"📢 *Eslatma!*\nSiz bugun soat *{b['time']}* da sartaroshxonamizga yozilgansiz.",
-                    parse_mode="Markdown"
-                )
+                context.bot.send_message(chat_id=b["telegram_id"], text=f"📢 *Eslatma!*\n\nSiz bugun soat *{b['time']}* da sartaroshxonamizga yozilgansiz.", parse_mode="Markdown")
             except Exception:
                 logger.exception("Customer reminder failed")
-
-            # Admin
-            admin_text = (
-                f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
-                f"👤 Ism: *{b['name']}*\n"
-                f"📞 Tel: *{b['phone']}*\n"
-                f"🛠 Xizmat: *{b['service']}*\n"
-                f"💈 Sartarosh: *{b['barber']}*\n"
-                f"📅 Sana: *{b['date']}*\n"
-                f"⏰ Vaqt: *{b['time']}*"
-            )
+            # Adminga
+            admin_text = (f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
+                          f"👤 Ism: *{b['name']}*\n"
+                          f"📞 Tel: *{b['phone']}*\n"
+                          f"🛠 Xizmat: *{b['service']}*\n"
+                          f"💈 Sartarosh: *{b['barber']}*\n"
+                          f"📅 Sana: *{b['date']}*\n"
+                          f"⏰ Vaqt: *{b['time']}*")
             for admin in ADMINS:
                 try:
                     context.bot.send_message(chat_id=admin, text=admin_text, parse_mode="Markdown")
                 except Exception:
                     logger.exception(f"Admin reminder failed for {admin}")
 
-# ==================
-# MIJOZ BRONLARINI KO'RISH / CANCEL
-# ==================
+# -------------------- USER CANCEL COMMAND --------------------
 def my_bookings(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
-    bookings = get_user_bookings(user_id)
-    if not bookings:
-        update.message.reply_text("Sizda faol bronlar yo‘q.")
+    cursor = context.bot_data.get('db_cursor')
+    cursor.execute("SELECT id, date, time, barber, status FROM bookings WHERE telegram_id=? AND status='active'", (user_id,))
+    rows = cursor.fetchall()
+    if not rows:
+        update.message.reply_text("Sizda faol bron yo‘q.")
         return
-    text = "📋 *Sizning bronlaringiz:*\n\n"
-    for b in bookings:
-        text += f"🆔 ID: `{b['id']}`\n📅 Sana: {b['date']}\n⏰ Vaqt: {b['time']}\n💈 Barber: {b['barber']}\n\n"
-    text += "Bekor qilish uchun: /cancel ID"
-    update.message.reply_text(text, parse_mode="Markdown")
+    text = "Sizning bronlaringiz:\n"
+    for r in rows:
+        text += f"\nID: {r[0]} | Sana: {r[1]} | Vaqt: {r[2]} | Barber: {r[3]}"
+    text += "\n\nO'chirish uchun: /cancelbooking <ID>"
+    update.message.reply_text(text)
 
-def cancel_booking(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    if not context.args:
-        update.message.reply_text("Bron ID ni kiriting. Masalan: /cancel 12")
+def cancel_my_booking(update: Update, context: CallbackContext):
+    args = context.args
+    if not args:
+        update.message.reply_text("Iltimos, /cancelbooking <ID> tarzida yozing.")
         return
-    booking_id = context.args[0]
-    booking = get_booking_for_cancel(booking_id, user_id)
-    if not booking:
-        update.message.reply_text("Bron topilmadi yoki sizga tegishli emas.")
+    booking_id = int(args[0])
+    cursor = context.bot_data.get('db_cursor')
+    cursor.execute("SELECT date, time FROM bookings WHERE id=? AND status='active'", (booking_id,))
+    row = cursor.fetchone()
+    if not row:
+        update.message.reply_text("Bunday aktiv bron topilmadi.")
         return
-    booking_datetime = TZ.localize(datetime.strptime(f"{booking['date']} {booking['time']}", "%Y-%m-%d %H:%M"))
-    now = datetime.now(TZ)
-    if (booking_datetime - now).total_seconds() < 3600:
-        update.message.reply_text("⛔ 1 soatdan kam qolgan, bekor qilib bo‘lmaydi.")
+    booking_dt = TZ.localize(datetime.strptime(f"{row[0]} {row[1]}", "%Y-%m-%d %H:%M"))
+    if (booking_dt - datetime.now(TZ)).total_seconds() < 3600:
+        update.message.reply_text("1 soatdan kam vaqt qolganda o'chirish mumkin emas!")
         return
-    cancel_user_booking(booking_id)
-    update.message.reply_text("❌ Bron bekor qilindi. Vaqt boshqalarga ochildi.")
+    cancel_booking(booking_id)
+    update.message.reply_text("Bron muvaffaqiyatli bekor qilindi.")
 
-def conv_cancel(update: Update, context: CallbackContext):
-    update.message.reply_text("Bekor qilindi.", reply_markup=ReplyKeyboardRemove())
-    return ConversationHandler.END
-
-# ==================
-# OTHER COMMANDS
-# ==================
+# -------------------- OTHER --------------------
 def numbers(update: Update, context: CallbackContext):
     update.message.reply_text("Admin bilan bog‘lanish: https://t.me/Death0201")
 
 def developer(update: Update, context: CallbackContext):
     update.message.reply_text("Bot developer: https://t.me/ergashev_dev")
 
-# ==================
-# MAIN
-# ==================
+# -------------------- MAIN --------------------
 def main():
     init_db()
     updater = Updater(BOT_TOKEN)
     dp = updater.dispatcher
+    dp.bot_data['db_cursor'] = cursor
 
     conv = ConversationHandler(
-    entry_points=[CommandHandler("book", book_start)],
-    states={
-        ASK_NAME: [MessageHandler(Filters.text & ~Filters.command, ask_name)],
-        ASK_PHONE: [MessageHandler(Filters.text | Filters.contact, ask_phone)],
-        ASK_SERVICE: [MessageHandler(Filters.text & ~Filters.command, ask_service)],
-        ASK_BARBER: [MessageHandler(Filters.text & ~Filters.command, ask_barber)],
-        ASK_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
-        ASK_TIME: [MessageHandler(Filters.text & ~Filters.command, ask_time)],
-        CONFIRM: [MessageHandler(Filters.text & ~Filters.command, finish)]
-    },
-    fallbacks=[CommandHandler("cancel", conv_cancel)],
-    allow_reentry=True
-)
+        entry_points=[CommandHandler("book", book_start)],
+        states={
+            ASK_NAME: [MessageHandler(Filters.text & ~Filters.command, ask_name)],
+            ASK_PHONE: [MessageHandler(Filters.text | Filters.contact, ask_phone)],
+            ASK_SERVICE: [MessageHandler(Filters.text & ~Filters.command, ask_service)],
+            ASK_BARBER: [MessageHandler(Filters.text & ~Filters.command, ask_barber)],
+            ASK_DATE: [MessageHandler(Filters.text & ~Filters.command, ask_date)],
+            ASK_TIME: [MessageHandler(Filters.text & ~Filters.command, ask_time)],
+            CONFIRM: [MessageHandler(Filters.text & ~Filters.command, finish)],
+        },
+        fallbacks=[CommandHandler("cancel", cancel)],
+        allow_reentry=True
+    )
 
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("numbers", numbers))
     dp.add_handler(CommandHandler("developer", developer))
     dp.add_handler(CommandHandler("mybookings", my_bookings))
-    dp.add_handler(CommandHandler("cancel", cancel_booking))
+    dp.add_handler(CommandHandler("cancelbooking", cancel_my_booking))
     dp.add_handler(conv)
 
     updater.bot.set_my_commands([
         BotCommand("start", "Botni ishga tushirish"),
         BotCommand("book", "Bron qilish"),
-        BotCommand("numbers", "Kontaktlar"),
-        BotCommand("developer", "Developer profili"),
         BotCommand("mybookings", "Mening bronlarim"),
-        BotCommand("cancel", "Bronni bekor qilish")
+        BotCommand("cancelbooking", "Bronni bekor qilish"),
+        BotCommand("numbers", "Kontaktlar"),
+        BotCommand("developer", "Developer profili")
     ])
 
     updater.job_queue.run_repeating(check_reminders, interval=60, first=10)
