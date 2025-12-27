@@ -197,7 +197,7 @@ def my_bookings(update: Update, context: CallbackContext):
     text = "Sizning bronlaringiz:\n"
     for r in rows:
         text += f"\nID: {r[0]} | Sana: {r[1]} | Vaqt: {r[2]} | Barber: {r[3]}"
-     text += "\n\nO'chirish uchun: /cancelbooking <ID>"
+
     update.message.reply_text(text)
 
 def cancel_my_booking(update: Update, context: CallbackContext):
