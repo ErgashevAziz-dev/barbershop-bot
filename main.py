@@ -132,7 +132,11 @@ def ask_date(update: Update, context: CallbackContext):
 def ask_time(update: Update, context: CallbackContext):
     context.user_data["time"] = update.message.text
     d = context.user_data
-    update.message.reply_text(f"Joyingiz band qilindi:\n\n" f"👤 Ism: {data['name']}\n" f"📞 Tel: {data['phone']}\n" f"🛠 Xizmat: {data['service']}\n" f"💈 Barber: {data['barber']}\n" f"📅 Sana: {data['date']}\n" f"⏰ Vaqt: {data['time']}\n\n" "Tasdiqlaysizmi? (yo'q/ha)")
+    update.message.reply_text(
+        f"👤 {d['name']}\n🛠 {d['service']}\n💈 {d['barber']}\n"
+        f"📅 {d['date']} ⏰ {d['time']}\n\nTasdiqlaysizmi?",
+        reply_markup=ReplyKeyboardMarkup([["ha", "yo‘q"]], resize_keyboard=True)
+    )
     return CONFIRM
 
 
