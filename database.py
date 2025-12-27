@@ -35,7 +35,7 @@ def add_client(name, phone, service, barber, date, time, telegram_id=None):
     conn.commit()
 
 
-def get_user_bookings(telegram_id, now):
+def get_bookings_for(telegram_id, now):
     cursor.execute(
         "SELECT id, name, phone, service, barber, date, time FROM bookings WHERE telegram_id=? AND date>=? ORDER BY date, time",
         (telegram_id, now.date().isoformat())
