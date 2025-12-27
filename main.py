@@ -179,48 +179,55 @@ def check_reminders(context: CallbackContext):
 
 # -------------------- USER CANCEL COMMAND --------------------
 def my_bookings(update: Update, context: CallbackContext):
-    TZ = pytz.timezone('Asia/Tashkent')
     now = datetime.now(TZ)
-
-    rows = get_user_bookings(update.message.from_user.id, now)
+    rows = get_future_user_bookings(update.message.from_user.id, now)
 
     if not rows:
-        update.message.reply_text("Sizda hozircha hech qanday bron yo‘q.")
+        update.message.reply_text("Sizda kelajakdagi bronlar yo‘q.")
         return
 
-    msg = "Sizning bronlaringiz:\n\n"
+    msg = "📋 *Sizning bronlaringiz:*\n\n"
     for r in rows:
-        msg += f"ID: {r[0]}\nXizmat: {r[3]}\nBarber: {r[4]}\nSana: {r[5]}\nVaqt: {r[6]}\n\n"
-    update.message.reply_text(msg)
+        msg += (
+            f"🆔 ID: {r[0]}\n"
+            f"🛠 Xizmat: {r[1]}\n"
+            f"💈 Barber: {r[2]}\n"
+            f"📅 Sana: {r[3]}\n"
+            f"⏰ Vaqt: {r[4]}\n\n"
+        )
 
-def cancel_my_booking(update: Update, context: CallbackContext):
-    if len(context.args) != 1:
-        update.message.reply_text("Iltimos, /cancelbooking <ID> formatida yozing.")
-        return
+    update.message.reply_text(msg, parse_mode="Markdown")
 
-    booking_id = context.args[0]
+def cancelbooking_start(update: Update, context: CallbackContext):
+    update.message.reply_text("Bekor qilmoqchi bo‘lgan bron ID sini yuboring:")
+    return 1
 
-    # Bronni bazadan tekshiramiz
-    cursor.execute("SELECT date, time FROM bookings WHERE id=? AND telegram_id=?", (booking_id, update.message.from_user.id))
+
+def cancelbooking_confirm(update: Update, context: CallbackContext):
+    booking_id = update.message.text.strip()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT date, time FROM bookings
+        WHERE id=? AND telegram_id=? AND status='active'
+    """, (booking_id, update.message.from_user.id))
+
     row = cursor.fetchone()
     if not row:
-        update.message.reply_text("Bunday ID li bron topilmadi.")
-        return
+        update.message.reply_text("Bunday aktiv bron topilmadi.")
+        return ConversationHandler.END
 
-    from datetime import datetime, timedelta
-    import pytz
-    TZ = pytz.timezone('Asia/Tashkent')
-    booking_datetime = TZ.localize(datetime.strptime(f"{row[0]} {row[1]}", "%Y-%m-%d %H:%M"))
+    booking_dt = TZ.localize(datetime.strptime(f"{row[0]} {row[1]}", "%Y-%m-%d %H:%M"))
     now = datetime.now(TZ)
 
-    if booking_datetime - now < timedelta(hours=1):
-        update.message.reply_text("Kechirasiz, 1 soatdan kam vaqt qolgani uchun bronni o‘chirib bo‘lmaydi.")
-        return
+    if booking_dt - now < timedelta(hours=1):
+        update.message.reply_text("❌ 1 soatdan kam vaqt qolgani uchun bekor qilib bo‘lmaydi.")
+        return ConversationHandler.END
 
-    # O'chiramiz
-    cursor.execute("DELETE FROM bookings WHERE id=?", (booking_id,))
-    conn.commit()
-    update.message.reply_text(f"Bron {booking_id} muvaffaqiyatli o‘chirildi ✅")
+    cancel_booking(booking_id)
+    update.message.reply_text("✅ Bron muvaffaqiyatli bekor qilindi.")
+    return ConversationHandler.END
+
 
 # -------------------- OTHER --------------------
 def numbers(update: Update, context: CallbackContext):
@@ -231,12 +238,14 @@ def developer(update: Update, context: CallbackContext):
 
 # -------------------- MAIN --------------------
 def main():
+    # 1. DB init
     init_db()
+
+    # 2. Botni ishga tushiramiz
     updater = Updater(BOT_TOKEN)
     dp = updater.dispatcher
-    cursor = conn.cursor()
-    dp.bot_data['db_cursor'] = cursor
 
+    # 3. Conversation (BOOK)
     conv = ConversationHandler(
         entry_points=[CommandHandler("book", book_start)],
         states={
@@ -252,13 +261,17 @@ def main():
         allow_reentry=True
     )
 
+    # 4. ❗ ODDIY COMMAND HANDLERLAR (MUHIM QISM)
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("numbers", numbers))
-    dp.add_handler(CommandHandler("developer", developer))
     dp.add_handler(CommandHandler("mybookings", my_bookings))
     dp.add_handler(CommandHandler("cancelbooking", cancel_my_booking))
+    dp.add_handler(CommandHandler("numbers", numbers))
+    dp.add_handler(CommandHandler("developer", developer))
+
+    # 5. Conversation handler ENG OXIRIDA
     dp.add_handler(conv)
 
+    # 6. Bot komandalarini menyuga chiqarish
     updater.bot.set_my_commands([
         BotCommand("start", "Botni ishga tushirish"),
         BotCommand("book", "Bron qilish"),
@@ -268,10 +281,18 @@ def main():
         BotCommand("developer", "Developer profili")
     ])
 
-    updater.job_queue.run_repeating(check_reminders, interval=60, first=10)
+    # 7. Reminder job
+    updater.job_queue.run_repeating(
+        check_reminders,
+        interval=60,
+        first=10
+    )
+
+    # 8. Botni ishga tushiramiz
     updater.start_polling()
     logger.info("Bot started")
     updater.idle()
+
 
 if __name__ == "__main__":
     main()
