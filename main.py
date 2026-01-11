@@ -59,15 +59,19 @@ def ask_name(update: Update, context: CallbackContext):
 
 def ask_phone(update: Update, context: CallbackContext):
     phone = update.message.contact.phone_number if update.message.contact else update.message.text.strip()
-    
-    pattern = re.compile(r'^\+998\d{9}$')
+
+    pattern = re.compile(r'^\+?998[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{2}[-\s]?\d{2}$')
+
     if not pattern.match(phone):
         update.message.reply_text(
-            "❌ Telefon raqam noto‘g‘ri. Iltimos +998XXXXXXXXX formatida kiriting yoki pastdagi tugmadan yuboring."
+            "❌ Telefon raqami noto‘g‘ri.\n\nIltimos raqamni quyidagi shakllardan birida yuboring:\n\n"
+            "👉 +998901234567\n👉 +998 90 123 45 67\n\n"
+            "Yoki pastdagi tugma orqali yuboring."
         )
         return ASK_PHONE
-    
+
     context.user_data["phone"] = phone
+
     update.message.reply_text(
         "Xizmatni tanlang:",
         reply_markup=ReplyKeyboardMarkup([[s] for s in SERVICES], resize_keyboard=True)
@@ -298,7 +302,7 @@ def check_reminders(context: CallbackContext):
             # Adminga
             admin_text = (f"⚠️ *30 daqiqadan keyin mijoz keladi!*\n\n"
                           f"👤 Ism: *{b['name']}*\n"
-                          f"📞 Tel: *{b[+'phone']}*\n"
+                          f"📞 Tel: *{b['phone']}*\n"
                           f"🛠 Xizmat: *{b['service']}*\n"
                           f"💈 Sartarosh: *{b['barber']}*\n"
                           f"📅 Sana: *{b['date']}*\n"
